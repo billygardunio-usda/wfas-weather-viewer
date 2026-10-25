@@ -59,6 +59,25 @@ describe('WFAS values API validation', () => {
     }), fetchImpl);
     expect(response).toMatchObject({ status: 502, jsonBody: { error: { code: 'invalid_upstream_response' } } });
   });
+
+  it('reports a timeout while reading the upstream body', async () => {
+    vi.useFakeTimers();
+    const fetchImpl = vi.fn().mockImplementation(async (url, { signal }) => new Response(new ReadableStream({
+      start(controller) {
+        signal.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+      },
+    })));
+    const responsePromise = handleWfasValues(new Request('https://app/api/wfas-values', {
+      method: 'POST',
+      body: JSON.stringify(validInput),
+    }), fetchImpl);
+    await vi.advanceTimersByTimeAsync(5000);
+    await expect(responsePromise).resolves.toMatchObject({
+      status: 504,
+      jsonBody: { error: { code: 'upstream_timeout' } },
+    });
+    vi.useRealTimers();
+  });
 });
 
 describe('WFAS values frontend client', () => {

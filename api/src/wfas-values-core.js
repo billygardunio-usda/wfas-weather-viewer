@@ -141,6 +141,7 @@ export async function handleWfasValues(request, fetchImpl = fetch) {
     try {
       payload = await readJsonWithLimit(response);
     } catch (error) {
+      if (error.name === 'AbortError') throw error;
       if (error instanceof RequestError) throw error;
       throw new RequestError('WFAS returned an invalid response.', 502, 'invalid_upstream_response');
     }

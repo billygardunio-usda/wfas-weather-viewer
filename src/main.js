@@ -137,7 +137,8 @@ async function inspectMap(coordinate){
       if(payload.property)result.querySelector('.value').title=payload.property;
     }catch(error){
       if(currentInspection!==inspectionId)return;
-      result.classList.add('error');result.querySelector('.value').textContent=error.message;
+      result.classList.add('error');const value=result.querySelector('.value');value.textContent=error.message;
+      if(error.code==='authentication_required'){const signIn=document.createElement('a');signIn.className='value-link';signIn.href='/.auth/login/aad?post_login_redirect_uri=.referrer';signIn.textContent='Sign in';value.append(document.createElement('br'),signIn);}
     }
   }));
 }
