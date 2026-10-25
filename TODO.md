@@ -17,12 +17,12 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Add a GitHub Pages deployment workflow.
 - [x] Add focused tests and production-build validation.
 
-## Direct Value Links
+## Protected Map Values
 
-- [x] Replace proxy-based click inspection with direct WFAS GetFeatureInfo links.
-- [x] Open each visible layer's value result in a separate browser tab without CORS.
-- [x] Remove Cloudflare Worker code, workflow, dependencies, and configuration.
-- [x] Update documentation, tests, and the deployed GitHub Pages site.
+- [x] Request values through the authenticated same-origin Azure Function.
+- [x] Restrict the function to bounded WFAS GetFeatureInfo requests.
+- [x] Render values and controlled errors in the map inspector.
+- [x] Deploy the frontend and function with Azure Static Web Apps.
 
 ## Notes
 

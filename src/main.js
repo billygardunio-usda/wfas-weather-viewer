@@ -13,8 +13,8 @@ import VectorSource from 'ol/source/Vector.js';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import 'ol/ol.css';
 import { CONUS_EXTENT } from './coverage.js';
-import { directFeatureInfoOptions } from './direct-feature-info.js';
 import { buildSharedTimeline, classifyTimestamp, findNearestFutureIndex, layerHasTime } from './timeline.js';
+import { formatWfasValue, requestWfasValue } from './wfas-values.js';
 import { getWindPresentation, isWindSpeed, WIND_MODES } from './wind-styles.js';
 import './style.css';
 
@@ -37,7 +37,7 @@ document.querySelector('#app').innerHTML = `
   </aside>
   <section class="map-panel" aria-label="Interactive weather map">
     <div id="map" class="map"></div>
-    <div class="map-note"><span>Weather data: WFAS GeoServer</span><span class="value-service-status ready">Direct values · click map</span></div>
+    <div class="map-note"><span>Weather data: WFAS GeoServer</span><span class="value-service-status ready">Protected values · click map</span></div>
     <aside id="inspector" class="inspector" aria-labelledby="inspector-title" hidden>
       <div class="inspector-heading"><div><p class="section-kicker">Selected location</p><h2 id="inspector-title">Map values</h2></div><button id="close-inspector" class="remove-button" type="button" aria-label="Close map values">&times;</button></div>
       <p id="inspector-location" class="inspector-location"></p><p id="inspector-time" class="inspector-time"></p><div id="inspector-results" class="inspector-results" aria-live="polite"></div>
@@ -62,7 +62,7 @@ const modelSelect=$('#model-select'), variableSelect=$('#variable-select'), wind
 const layerList=$('#layer-list'), layerCount=$('.count-badge'), connection=$('.connection'), modelTimeStatus=$('#model-time-status');
 const previousButton=$('#previous-time'), playButton=$('#play-time'), nextButton=$('#next-time'), timeSlider=$('#time-slider'), selectedTime=$('#selected-time'), timeKind=$('#time-kind'), timelineSummary=$('#timeline-summary'), nowMarker=$('#now-marker');
 const inspector=$('#inspector'), inspectorLocation=$('#inspector-location'), inspectorTime=$('#inspector-time'), inspectorResults=$('#inspector-results');
-const activeLayers=[]; const timeline={times:[],index:-1,timer:null}; let catalog;
+const activeLayers=[]; const timeline={times:[],index:-1,timer:null}; let catalog, inspectionId=0;
 
 function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 function formatTimestamp(value){return new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(value));}
@@ -118,15 +118,29 @@ function addWeatherLayer(metadata,windMode='shaded'){
   activeLayers.unshift({metadata,layer,userVisible:true,hasData:true,windPresentation:presentation});map.addLayer(layer);syncOrder();rebuildTimeline({preferFuture:metadata.modelKind==='Forecast'});
 }
 
-function closeInspector(){inspector.hidden=true;selectionSource.clear();}
-function inspectMap(coordinate){
+function closeInspector(){inspectionId+=1;inspector.hidden=true;selectionSource.clear();}
+async function inspectMap(coordinate){
+  const currentInspection=++inspectionId;
   const timestamp=timeline.times[timeline.index], visible=activeLayers.filter((entry)=>entry.userVisible&&entry.hasData), [lon,lat]=toLonLat(coordinate);selectionSource.clear();selectionSource.addFeature(new Feature(new Point(coordinate)));inspector.hidden=false;inspectorLocation.textContent=`${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;inspectorTime.textContent=timestamp?`${formatTimestamp(timestamp)} UTC`:'No timestamp selected';
   if(!visible.length){inspectorResults.innerHTML='<p class="inspection-message">No visible weather layers to inspect.</p>';return;}
-  inspectorResults.innerHTML=visible.map((entry)=>{
-    const url=entry.layer.getSource().getFeatureInfoUrl(coordinate,map.getView().getResolution(),map.getView().getProjection(),directFeatureInfoOptions(entry.metadata.id));
+  inspectorResults.innerHTML=visible.map((entry,index)=>{
     const title=`${entry.metadata.modelLabel} · ${entry.metadata.title}`;
-    return `<article class="inspection-result"><strong>${escapeHtml(title)}</strong><a class="value-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Open WFAS value ↗</a></article>`;
+    return `<article class="inspection-result" data-result="${index}"><strong>${escapeHtml(title)}</strong><span class="value">Loading…</span></article>`;
   }).join('');
+  const resolution=map.getView().getResolution(), projection=map.getView().getProjection().getCode();
+  await Promise.all(visible.map(async(entry,index)=>{
+    const result=inspectorResults.querySelector(`[data-result="${index}"]`);
+    try{
+      const payload=await requestWfasValue({layer:entry.metadata.id,x:coordinate[0],y:coordinate[1],projection,resolution,width:101,height:101,...(timestamp&&{time:timestamp})});
+      if(currentInspection!==inspectionId)return;
+      result.querySelector('.value').textContent=formatWfasValue(payload.value);
+      if(payload.property)result.querySelector('.value').title=payload.property;
+    }catch(error){
+      if(currentInspection!==inspectionId)return;
+      result.classList.add('error');const value=result.querySelector('.value');value.textContent=error.message;
+      if(error.code==='authentication_required'){const signIn=document.createElement('a');signIn.className='value-link';signIn.href='/.auth/login/aad?post_login_redirect_uri=.referrer';signIn.textContent='Sign in';value.append(document.createElement('br'),signIn);}
+    }
+  }));
 }
 
 addButton.addEventListener('click',()=>addWeatherLayer(catalog?.layers.find((layer)=>layer.id===variableSelect.value),windModeSelect.value));variableSelect.addEventListener('change',updateWindMode);
