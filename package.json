@@ -1,0 +1,30 @@
+{
+  "name": "wfas-weather-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "sync-catalog": "node scripts/sync-catalog.js",
+    "predev": "npm run sync-catalog",
+    "dev": "vite",
+    "prebuild": "npm run sync-catalog",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.3.1",
+    "ol": "^10.6.1"
+  },
+  "devDependencies": {
+    "vite": "^7.1.12",
+    "vitest": "^4.0.6",
+    "wrangler": "^4.45.0"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "workerd": true
+  }
+}

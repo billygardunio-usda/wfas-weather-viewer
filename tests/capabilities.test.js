@@ -1,0 +1,5 @@
+import { describe, expect, it } from 'vitest';
+import { parseCapabilities } from '../src/capabilities.js';
+describe('parseCapabilities',()=>{
+it('extracts supported metadata',()=>{const catalog=parseCapabilities({WMS_Capabilities:{Service:{Title:'Test'},Capability:{Layer:{Layer:[{Name:'urma:Temperature',Title:'Temperature',CRS:['CRS:84'],Dimension:{name:'time','#text':'2026-10-20T00:00:00Z'},EX_GeographicBoundingBox:{westBoundLongitude:'-125',southBoundLatitude:'24',eastBoundLongitude:'-66',northBoundLatitude:'50'},Style:{Name:'wfas:TempK',LegendURL:{OnlineResource:{href:'https://example.test/legend.png'}}}}]}}}});expect(catalog.layers[0].id).toBe('urma:Temperature');expect(catalog.models.find((x)=>x.id==='urma').available).toBe(true);});
+it('rejects empty capabilities',()=>expect(()=>parseCapabilities({WMS_Capabilities:{Capability:{Layer:{}}}})).toThrow());});

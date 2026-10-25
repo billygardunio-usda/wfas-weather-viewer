@@ -1,0 +1,6 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import worker from '../worker/index.js';
+describe('feature-info worker',()=>{afterEach(()=>vi.unstubAllGlobals());
+it('proxies WFAS with CORS',async()=>{const upstream=vi.fn().mockResolvedValue(new Response('{"features":[]}',{headers:{'Content-Type':'application/json'}}));vi.stubGlobal('fetch',upstream);const target=new URL('https://wfas.firenet.gov/geoserver/wms?SERVICE=WMS&REQUEST=GetFeatureInfo&INFO_FORMAT=text/plain');const response=await worker.fetch(new Request(`https://proxy.example/?url=${encodeURIComponent(target)}`,{headers:{Origin:'https://viewer.example'}}),{ALLOWED_ORIGINS:'https://viewer.example'});expect(response.status).toBe(200);expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://viewer.example');});
+it('rejects arbitrary targets',async()=>expect((await worker.fetch(new Request(`https://proxy.example/?url=${encodeURIComponent('https://example.com/private')}`))).status).toBe(400));
+it('reports health',async()=>expect(await (await worker.fetch(new Request('https://proxy.example/?health=1'))).json()).toEqual({status:'ready'}));});
