@@ -10,23 +10,16 @@ A static OpenLayers viewer for observation and forecast layers from the
 - Displays multiple layers with visibility, opacity, ordering, and legends.
 - Provides shaded wind speed, direction arrows, and isotachs in mph.
 - Uses one shared timeline with Past/Forecast and Now indicators.
-- Inspects all visible layers on map click through a restricted Cloudflare Worker.
-- Displays temperature in °F, wind in mph, and precipitation in inches.
+- Creates direct WFAS value links for every visible layer when the map is clicked.
 
 ## Local Development
 
 ```powershell
 npm install
-npm run worker:dev
-```
-
-In a second terminal:
-
-```powershell
 npm run dev
 ```
 
-The viewer automatically discovers the local Worker on port `8787`. Validate with:
+Validate with:
 
 ```powershell
 npm test
@@ -44,25 +37,12 @@ npm run preview
 The Pages workflow tests and builds the site on pushes to `main`. It also runs daily
 to refresh GeoServer model availability and retained timestamps.
 
-## Cloudflare Worker
+## Map Values
 
-GitHub Pages cannot read WFAS feature values directly because GeoServer does not
-permit cross-origin JSON requests. The included Worker accepts only WFAS WMS
-`GetFeatureInfo` requests.
-
-1. Create a free Cloudflare account and initialize **Workers & Pages**.
-2. Create an API token using the **Edit Cloudflare Workers** template.
-3. Copy the account ID from the Cloudflare dashboard.
-4. In GitHub **Settings > Secrets and variables > Actions > Secrets**, add:
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-5. Run **Actions > Deploy Feature Info Worker**.
-6. Copy the resulting `https://...workers.dev` URL.
-7. In GitHub Actions **Variables**, add `FEATURE_INFO_PROXY_URL` with that URL.
-8. Run **Deploy GitHub Pages** again.
-
-For production, replace `*` in `ALLOWED_ORIGINS` in `wrangler.jsonc` with the final
-GitHub Pages origin.
+Clicking the map places a marker and creates an **Open WFAS value** link for each
+visible layer. Each link opens GeoServer's result in a separate tab, avoiding the
+cross-origin restriction without a proxy or external cloud service. WFAS displays
+these sampled values in their native source units.
 
 ## Data Behavior
 

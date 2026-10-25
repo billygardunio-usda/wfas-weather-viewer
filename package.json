@@ -10,9 +10,7 @@
     "prebuild": "npm run sync-catalog",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "worker:dev": "wrangler dev",
-    "worker:deploy": "wrangler deploy"
+    "test": "vitest run"
   },
   "dependencies": {
     "fast-xml-parser": "^5.3.1",
@@ -20,11 +18,9 @@
   },
   "devDependencies": {
     "vite": "^7.1.12",
-    "vitest": "^4.0.6",
-    "wrangler": "^4.45.0"
+    "vitest": "^4.0.6"
   },
   "allowScripts": {
-    "esbuild": true,
-    "workerd": true
+    "esbuild": true
   }
 }

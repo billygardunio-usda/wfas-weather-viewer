@@ -13,7 +13,7 @@ import VectorSource from 'ol/source/Vector.js';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import 'ol/ol.css';
 import { CONUS_EXTENT } from './coverage.js';
-import { buildProxyUrl, convertFeatureInfoValue, formatFeatureInfoValue, readFeatureInfoValue, resolveFeatureInfoProxy } from './feature-info.js';
+import { directFeatureInfoOptions } from './direct-feature-info.js';
 import { buildSharedTimeline, classifyTimestamp, findNearestFutureIndex, layerHasTime } from './timeline.js';
 import { getWindPresentation, isWindSpeed, WIND_MODES } from './wind-styles.js';
 import './style.css';
@@ -37,7 +37,7 @@ document.querySelector('#app').innerHTML = `
   </aside>
   <section class="map-panel" aria-label="Interactive weather map">
     <div id="map" class="map"></div>
-    <div class="map-note"><span>Weather data: WFAS GeoServer</span><span id="value-service-status" class="value-service-status">Values checking...</span></div>
+    <div class="map-note"><span>Weather data: WFAS GeoServer</span><span class="value-service-status ready">Direct values · click map</span></div>
     <aside id="inspector" class="inspector" aria-labelledby="inspector-title" hidden>
       <div class="inspector-heading"><div><p class="section-kicker">Selected location</p><h2 id="inspector-title">Map values</h2></div><button id="close-inspector" class="remove-button" type="button" aria-label="Close map values">&times;</button></div>
       <p id="inspector-location" class="inspector-location"></p><p id="inspector-time" class="inspector-time"></p><div id="inspector-results" class="inspector-results" aria-live="polite"></div>
@@ -61,9 +61,8 @@ const $ = (selector) => document.querySelector(selector);
 const modelSelect=$('#model-select'), variableSelect=$('#variable-select'), windModeControl=$('#wind-mode-control'), windModeSelect=$('#wind-mode-select'), addButton=$('#add-layer');
 const layerList=$('#layer-list'), layerCount=$('.count-badge'), connection=$('.connection'), modelTimeStatus=$('#model-time-status');
 const previousButton=$('#previous-time'), playButton=$('#play-time'), nextButton=$('#next-time'), timeSlider=$('#time-slider'), selectedTime=$('#selected-time'), timeKind=$('#time-kind'), timelineSummary=$('#timeline-summary'), nowMarker=$('#now-marker');
-const inspector=$('#inspector'), inspectorLocation=$('#inspector-location'), inspectorTime=$('#inspector-time'), inspectorResults=$('#inspector-results'), valueServiceStatus=$('#value-service-status');
-const activeLayers=[]; const timeline={times:[],index:-1,timer:null}; let catalog; let featureInfoReady=false;
-const featureInfoProxy=resolveFeatureInfoProxy(import.meta.env.VITE_FEATURE_INFO_PROXY ?? '',globalThis.location);
+const inspector=$('#inspector'), inspectorLocation=$('#inspector-location'), inspectorTime=$('#inspector-time'), inspectorResults=$('#inspector-results');
+const activeLayers=[]; const timeline={times:[],index:-1,timer:null}; let catalog;
 
 function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 function formatTimestamp(value){return new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(value));}
@@ -120,21 +119,14 @@ function addWeatherLayer(metadata,windMode='shaded'){
 }
 
 function closeInspector(){inspector.hidden=true;selectionSource.clear();}
-function inspectionRow(entry,state){
-  const title=`${entry.metadata.modelLabel} · ${entry.metadata.title}`;
-  if(state.status==='loading')return `<article class="inspection-result"><strong>${title}</strong><span>Loading value...</span></article>`;
-  if(state.status==='error')return `<article class="inspection-result error"><strong>${title}</strong><span>${escapeHtml(state.message)}</span></article>`;
-  if(state.value==null)return `<article class="inspection-result"><strong>${title}</strong><span>No data at this location</span></article>`;
-  const display=convertFeatureInfoValue(entry.metadata.variable,state.value);return `<article class="inspection-result"><strong>${title}</strong><span class="value">${formatFeatureInfoValue(display.value)} <small>${display.unit}</small></span></article>`;
-}
-async function inspectMap(coordinate){
+function inspectMap(coordinate){
   const timestamp=timeline.times[timeline.index], visible=activeLayers.filter((entry)=>entry.userVisible&&entry.hasData), [lon,lat]=toLonLat(coordinate);selectionSource.clear();selectionSource.addFeature(new Feature(new Point(coordinate)));inspector.hidden=false;inspectorLocation.textContent=`${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;inspectorTime.textContent=timestamp?`${formatTimestamp(timestamp)} UTC`:'No timestamp selected';
-  if(!visible.length){inspectorResults.innerHTML='<p class="inspection-message">No visible weather layers to inspect.</p>';return;}if(!featureInfoReady){inspectorResults.innerHTML='<p class="inspection-message">Layer values are unavailable. Coordinates and time remain available.</p>';return;}
-  const states=visible.map(()=>({status:'loading'}));const render=()=>inspectorResults.innerHTML=visible.map((entry,index)=>inspectionRow(entry,states[index])).join('');render();
-  await Promise.all(visible.map(async(entry,index)=>{try{const url=entry.layer.getSource().getFeatureInfoUrl(coordinate,map.getView().getResolution(),map.getView().getProjection(),{INFO_FORMAT:'application/json',FEATURE_COUNT:1,QUERY_LAYERS:entry.metadata.id,LAYERS:entry.metadata.id,STYLES:'',SLD_BODY:undefined});const response=await fetch(buildProxyUrl(featureInfoProxy,url));if(!response.ok)throw new Error(`Request failed (${response.status})`);states[index]={status:'ready',value:readFeatureInfoValue(await response.json())};}catch(error){states[index]={status:'error',message:error.message??'Value unavailable'};}render();}));
-}
-async function checkValueService(){
-  if(!featureInfoProxy){valueServiceStatus.textContent='Values unavailable';valueServiceStatus.classList.add('unavailable');return;}try{const url=new URL(featureInfoProxy);url.searchParams.set('health','1');const response=await fetch(url);featureInfoReady=response.ok&&(await response.json()).status==='ready';}catch{featureInfoReady=false;}valueServiceStatus.textContent=featureInfoReady?'Values ready · click map':'Values unavailable';valueServiceStatus.className=`value-service-status ${featureInfoReady?'ready':'unavailable'}`;
+  if(!visible.length){inspectorResults.innerHTML='<p class="inspection-message">No visible weather layers to inspect.</p>';return;}
+  inspectorResults.innerHTML=visible.map((entry)=>{
+    const url=entry.layer.getSource().getFeatureInfoUrl(coordinate,map.getView().getResolution(),map.getView().getProjection(),directFeatureInfoOptions(entry.metadata.id));
+    const title=`${entry.metadata.modelLabel} · ${entry.metadata.title}`;
+    return `<article class="inspection-result"><strong>${escapeHtml(title)}</strong><a class="value-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Open WFAS value ↗</a></article>`;
+  }).join('');
 }
 
 addButton.addEventListener('click',()=>addWeatherLayer(catalog?.layers.find((layer)=>layer.id===variableSelect.value),windModeSelect.value));variableSelect.addEventListener('change',updateWindMode);
@@ -147,4 +139,4 @@ map.on('singleclick',(event)=>inspectMap(event.coordinate));$('#close-inspector'
 async function loadCatalog(){
   try{const response=await fetch('./catalog.json');if(!response.ok)throw new Error(`HTTP ${response.status}`);catalog=await response.json();const available=catalog.models.filter((model)=>model.available);modelSelect.innerHTML=catalog.models.map((model)=>`<option value="${model.id}" ${model.available?'':'disabled'}>${model.label} - ${model.available?model.kind:'not advertised'}</option>`).join('');modelSelect.disabled=!available.length;modelSelect.value=available.some((model)=>model.id==='urma')?'urma':available[0]?.id;renderVariables(modelSelect.value);modelSelect.addEventListener('change',()=>renderVariables(modelSelect.value));connection.classList.add('ready');connection.innerHTML=`<span class="status-dot"></span><span>${catalog.layers.length} layers ready</span>`;const initial=catalog.layers.find((layer)=>layer.model==='urma'&&layer.variable.toLowerCase()==='temperature')??catalog.layers.find((layer)=>layer.model==='urma');addWeatherLayer(initial);}catch(error){connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>Catalog unavailable</span>';emptyLayers();console.error(error);}
 }
-emptyLayers();loadCatalog();checkValueService();
+emptyLayers();loadCatalog();
