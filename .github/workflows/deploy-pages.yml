@@ -21,6 +21,21 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-nomads.txt
+      - run: python -m pip install -r requirements-nomads.txt
+      - run: python -m unittest tests/test_sync_nomads.py
+      - uses: actions/cache@v4
+        with:
+          path: public/nomads
+          key: nomads-gfs-${{ github.run_id }}
+          restore-keys: nomads-gfs-
+      - name: Refresh NOMADS grids
+        continue-on-error: true
+        run: python scripts/sync_nomads.py
       - run: npm ci
       - run: npm test
       - run: npm run build

@@ -1,7 +1,8 @@
 # WFAS Weather Viewer
 
 A static OpenLayers viewer for observation and forecast layers from the
-[WFAS GeoServer](https://wfas.firenet.gov/geoserver/web/).
+[WFAS GeoServer](https://wfas.firenet.gov/geoserver/web/) and
+[NCEP NOMADS](https://nomads.ncep.noaa.gov/).
 
 ## Features
 
@@ -11,12 +12,22 @@ A static OpenLayers viewer for observation and forecast layers from the
 - Provides shaded wind speed, direction arrows, and isotachs in mph.
 - Uses one shared timeline with Past/Forecast and Now indicators.
 - Creates direct WFAS value links for every visible layer when the map is clicked.
+- Selects between WFAS gridded products and reduced NOMADS GFS grids.
+- Animates NOMADS 10 m U/V winds with browser-rendered particles.
 
 ## Local Development
 
 ```powershell
 npm install
 npm run dev
+```
+
+The committed NOMADS catalog is populated by the Pages workflow. To refresh it
+locally, install the Python `eccodes` package and run:
+
+```powershell
+python -m pip install -r requirements-nomads.txt
+npm run sync-nomads
 ```
 
 Validate with:
@@ -33,7 +44,8 @@ npm run preview
 2. Push to `main` or run **Actions > Deploy GitHub Pages**.
 
 The Pages workflow tests and builds the site on pushes to `main`. It also runs daily
-to refresh GeoServer model availability and retained timestamps.
+to refresh GeoServer model availability, retained timestamps, and a constrained
+NOMADS GFS dataset.
 
 ## Map Values
 
@@ -47,9 +59,42 @@ accessible without credentials. GitHub Pages contains no backend, secrets, or ac
 control; if WFAS later restricts these endpoints, value lookup will require an
 approved server-side service.
 
+## NOMADS processing
+
+The deployment workflow requests the latest available GFS 0.25-degree cycle through
+the NOMADS GRIB filter. It limits downloads to CONUS, 2 m temperature, accumulated
+precipitation, and 10 m U/V winds for forecast hours 0–24 at three-hour intervals.
+The build reduces these fields to a one-degree browser grid and publishes static JSON
+assets. This keeps GitHub Pages independent of runtime NOMADS CORS behavior and avoids
+shipping full GRIB2 files to browsers.
+
+The workflow caches the last successful NOMADS dataset. If a refresh is temporarily
+unavailable, Pages can continue deploying the cached data; the source timestamps
+remain visible through the shared timeline.
+
+Animated particles show wind flow while the shaded layer shows speed. Particle
+animation is an interpretive display; source values remain available through map
+inspection. The first release intentionally limits model, variables, resolution, and
+forecast range so scheduled builds and Pages storage remain bounded.
+
+## Predictive Service Area indices
+
+The NOMADS grid contract is also the starting point for PSA aggregation. A subsequent
+build step can intersect grid-cell centers with an authoritative PSA boundary
+GeoJSON, calculate configured statistics by valid time, and publish a small
+`psa-indices.json` dataset plus a choropleth layer.
+
+Index definitions should remain configuration-driven and versioned with provenance:
+input source/model/level, formula, units, temporal window, missing-data threshold,
+aggregation statistic, classification breaks, and effective date. Candidate first
+products are maximum wind, minimum relative humidity, precipitation accumulation,
+and a reviewed composite fire-weather index. Operational labels should not be added
+until the authoritative PSA boundaries and index formulas are approved.
+
 ## Data Behavior
 
-The app does not retain weather rasters. It reads WMS capabilities during each build
-and requests visible tiles directly from WFAS. Layers must advertise an extent that
-intersects CONUS (`-125, 24, -66, 50`). Models and dates appear or disappear as the
-upstream service changes.
+The app does not retain WFAS weather rasters. It reads WMS capabilities during each
+build and requests visible tiles directly from WFAS. NOMADS grids are retained only
+as reduced static JSON for the current GFS cycle. Layers must intersect CONUS
+(`-125, 24, -66, 50`). Models and dates appear or disappear as upstream services
+change.

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "sync-catalog": "node scripts/sync-catalog.js",
+    "sync-nomads": "python3 scripts/sync_nomads.py",
     "predev": "npm run sync-catalog",
     "dev": "vite",
     "prebuild": "npm run sync-catalog",
