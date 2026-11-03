@@ -16,16 +16,27 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Display temperature in Fahrenheit, wind in mph, and precipitation in inches.
 - [x] Add a GitHub Pages deployment workflow.
 - [x] Add focused tests and production-build validation.
+- [x] Add WFAS/NOMADS source selection.
+- [x] Publish constrained NOMADS GFS grids during the Pages build.
+- [x] Add timeline-synchronized animated 10 m wind particles.
 
 ## Direct Value Links
 
 - [x] Replace proxy-based click inspection with direct WFAS GetFeatureInfo links.
 - [x] Open each visible layer's value result in a separate browser tab without CORS.
-- [x] Remove Cloudflare Worker code, workflow, dependencies, and configuration.
-- [x] Update documentation, tests, and the deployed GitHub Pages site.
+- [x] Remove serverless proxy code, dependencies, and configuration.
+- [x] Deploy the static viewer with GitHub Pages.
 
 ## Notes
 
 - Available models and dates are controlled by the live WFAS GeoServer.
-- The catalog refreshes during local startup/build and daily on GitHub Pages.
+- WFAS and NOMADS catalogs refresh daily on GitHub Pages.
 - Clicked values open directly from WFAS in native source units.
+
+## Predictive Service Area indices
+
+- [ ] Confirm the authoritative PSA boundary dataset and update cadence.
+- [ ] Approve index formulas, units, temporal windows, and missing-data rules.
+- [ ] Add build-time zonal statistics over the shared gridded-data contract.
+- [ ] Publish time-enabled PSA GeoJSON and render a classified choropleth.
+- [ ] Display formula version, source cycle, valid time, and data completeness.
