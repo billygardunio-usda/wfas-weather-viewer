@@ -218,7 +218,13 @@ def sync_model(model, now):
         temporary_path = Path(temporary_directory)
         for forecast_hour in model["forecastHours"]:
             grib_path = temporary_path / f"{model['id']}-f{forecast_hour:03d}.grib2"
-            download(filtered_url(model, cycle, forecast_hour), grib_path)
+            try:
+                download(filtered_url(model, cycle, forecast_hour), grib_path)
+            except Exception as error:
+                if payloads:
+                    print(f"Stopping {model['label']} at forecast hour {forecast_hour}: {error}")
+                    break
+                raise
             valid_time = cycle + timedelta(hours=forecast_hour)
             timestamp = valid_time.isoformat(timespec="milliseconds").replace("+00:00", "Z")
             asset_name = f"{model['id']}-{valid_time:%Y%m%dT%H%MZ}.json"

@@ -75,7 +75,9 @@ browsers.
 
 The workflow caches the last successful NOMADS dataset. If a refresh is temporarily
 unavailable, Pages can continue deploying the cached data; the source timestamps
-remain visible through the shared timeline.
+remain visible through the shared timeline. Rapid-refresh products retain all valid
+forecast hours published at build time rather than failing the whole model when a
+later forecast file is not yet available.
 
 Animated particles show wind flow while the shaded layer shows speed. Particle
 animation is an interpretive display; source values remain available through map
