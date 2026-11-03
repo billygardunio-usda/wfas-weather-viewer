@@ -64,6 +64,8 @@ The **WFAS Fire Danger** model groups the confirmed public BI percentile, ERC
 percentile, Severe Fire Danger Index, and 1000-hour fuel-moisture products. These
 are percentile or classified products where indicated by WFAS; they should not be
 interpreted as raw BI or ERC values unless the layer title explicitly says so.
+Time-enabled fire-danger products open on the advertised default, which WFAS
+currently publishes as Day 0 (today), followed by Days 1–6.
 
 This deployment assumes the WFAS WMS and `GetFeatureInfo` endpoints remain publicly
 accessible without credentials. GitHub Pages contains no backend, secrets, or access
@@ -112,4 +114,5 @@ The app does not retain WFAS weather rasters. It reads WMS capabilities during e
 build and requests visible tiles directly from WFAS. NOMADS grids are retained only
 as reduced static JSON for the current GFS cycle. Layers must intersect CONUS
 (`-125, 24, -66, 50`). Models and dates appear or disappear as upstream services
-change.
+change. WFAS catalog history is limited to five prior UTC calendar days while all
+advertised future times remain available.
