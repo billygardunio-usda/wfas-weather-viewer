@@ -20,6 +20,7 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Publish constrained NOMADS GFS, HRRR, RAP, and NAM Nest grids during the Pages build.
 - [x] Add timeline-synchronized animated 10 m wind particles.
 - [x] Add curated WFAS BI, ERC, SFDI, and fuel-moisture products.
+- [x] Open fire-danger outlooks on Day 0 and retain five days of WFAS history.
 
 ## Direct Value Links
 

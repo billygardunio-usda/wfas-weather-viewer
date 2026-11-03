@@ -71,6 +71,11 @@ const activeLayers=[]; const timeline={times:[],index:-1,timer:null}; const cata
 function escapeHtml(value){return String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
 function formatTimestamp(value){return new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'UTC'}).format(new Date(value));}
 function formatDate(value){return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(value);}
+function fireDayLabel(timestamp){
+  if(!activeLayers.some((entry)=>entry.metadata.model==='wfas-fire'))return '';
+  const today=new Date();today.setUTCHours(0,0,0,0);const selected=new Date(timestamp);selected.setUTCHours(0,0,0,0);const day=Math.round((selected-today)/(24*60*60*1000));
+  return day>=0&&day<=6?` · Day ${day}${day===0?' (Today)':''}`:'';
+}
 function emptyLayers(){layerList.innerHTML='<div class="empty-state"><strong>No weather layers yet</strong><span>Choose a model and variable to begin.</span></div>';}
 
 function updateModelStatus(modelId){
@@ -117,12 +122,12 @@ async function loadNomadsGrid(entry,timestamp){
   }catch(error){connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>NOMADS grid unavailable</span>';console.error(error);}
 }
 function selectTime(index){
-  if(!timeline.times.length)return; timeline.index=Math.max(0,Math.min(index,timeline.times.length-1)); const timestamp=timeline.times[timeline.index]; timeSlider.value=timeline.index; selectedTime.textContent=`${formatTimestamp(timestamp)} UTC`;
+  if(!timeline.times.length)return; timeline.index=Math.max(0,Math.min(index,timeline.times.length-1)); const timestamp=timeline.times[timeline.index]; timeSlider.value=timeline.index; selectedTime.textContent=`${formatTimestamp(timestamp)} UTC${fireDayLabel(timestamp)}`;
   const kind=classifyTimestamp(timestamp); timeKind.hidden=false;timeKind.textContent=kind;timeKind.className=`time-kind ${kind.toLowerCase()}`;
   activeLayers.forEach((entry)=>{entry.hasData=layerHasTime(entry.metadata,timestamp);entry.layer.setVisible(entry.userVisible&&entry.hasData);if(entry.hasData&&entry.metadata.source==='wfas'&&entry.metadata.times.length)entry.layer.getSource().updateParams({TIME:timestamp});if(entry.hasData&&entry.metadata.source==='nomads'){if(entry.gridTime!==timestamp){entry.grid=null;entry.layer.setSource(null);}loadNomadsGrid(entry,timestamp);}});syncParticleGrid();renderLayers();
 }
-function rebuildTimeline({preferFuture=false}={}){
-  const previous=timeline.times[timeline.index];timeline.times=buildSharedTimeline(activeLayers.map((entry)=>entry.metadata));const exact=timeline.times.indexOf(previous);timeline.index=exact>=0?exact:timeline.times.length-1;const future=findNearestFutureIndex(timeline.times);if(preferFuture&&future>=0)timeline.index=future;
+function rebuildTimeline({preferFuture=false,preferTimestamp=null}={}){
+  const previous=timeline.times[timeline.index];timeline.times=buildSharedTimeline(activeLayers.map((entry)=>entry.metadata));const exact=timeline.times.indexOf(previous),preferred=timeline.times.findIndex((time)=>new Date(time).valueOf()===new Date(preferTimestamp).valueOf());timeline.index=preferred>=0?preferred:exact>=0?exact:timeline.times.length-1;const future=findNearestFutureIndex(timeline.times);if(preferred<0&&preferFuture&&future>=0)timeline.index=future;
   const enabled=timeline.times.length>0;[timeSlider,previousButton,playButton,nextButton].forEach((control)=>control.disabled=!enabled);timeSlider.max=Math.max(0,timeline.times.length-1);
   nowMarker.hidden=!(future>=0&&timeline.times.length>1);if(!nowMarker.hidden)nowMarker.style.left=`${future/(timeline.times.length-1)*100}%`;
   const observations=activeLayers.filter((entry)=>entry.metadata.modelKind==='Observation').length, forecasts=activeLayers.filter((entry)=>entry.metadata.modelKind==='Forecast').length;
@@ -136,7 +141,7 @@ function addWeatherLayer(metadata,windMode='shaded'){
   let layer;
   if(metadata.source==='nomads')layer=createNomadsLayer(metadata);
   else{const params={LAYERS:presentation?.layers.join(',')??metadata.id,TILED:true,FORMAT:'image/png',TRANSPARENT:true};if(presentation)params.SLD_BODY=presentation.sld;if(metadata.times.at(-1))params.TIME=metadata.times.at(-1);const source=new TileWMS({url:'https://wfas.firenet.gov/geoserver/wms',params,serverType:'geoserver',transition:0});layer=new TileLayer({source,opacity:.72,extent:transformExtent(CONUS_EXTENT,'EPSG:4326','EPSG:3857')});source.on('tileloaderror',()=>{connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>Some WFAS tiles failed</span>';});}
-  activeLayers.unshift({metadata,layer,userVisible:true,hasData:true,windPresentation:presentation});map.addLayer(layer);syncOrder();rebuildTimeline({preferFuture:metadata.modelKind==='Forecast'});
+  activeLayers.unshift({metadata,layer,userVisible:true,hasData:true,windPresentation:presentation});map.addLayer(layer);syncOrder();rebuildTimeline({preferFuture:metadata.modelKind==='Forecast',preferTimestamp:metadata.defaultTime});
 }
 
 function closeInspector(){inspector.hidden=true;selectionSource.clear();}
