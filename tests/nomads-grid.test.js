@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNomadsValue, sampleGrid } from '../src/nomads-grid.js';
+import { assetForTime, formatNomadsValue, sampleGrid } from '../src/nomads-grid.js';
 import { particleDelta } from '../src/wind-particles.js';
 
 const grid = {
@@ -23,6 +23,11 @@ describe('NOMADS grids', () => {
   it('formats browser-visible units', () => {
     expect(formatNomadsValue({ visualization: 'wind-particles' }, grid, 0, 1)).toBe('2.2 mph · 270°');
     expect(formatNomadsValue({ visualization: 'precipitation' }, grid, 0, 1)).toBe('1.00 in');
+  });
+
+  it('matches normalized timeline timestamps to published assets', () => {
+    const metadata = { assets: { '2026-11-03T12:00:00Z': './nomads/gfs.json' } };
+    expect(assetForTime(metadata, '2026-11-03T12:00:00.000Z')).toBe('./nomads/gfs.json');
   });
 
   it('advects particles in screen coordinates', () => {

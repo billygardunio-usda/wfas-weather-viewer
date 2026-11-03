@@ -14,7 +14,7 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style.js';
 import 'ol/ol.css';
 import { CONUS_EXTENT } from './coverage.js';
 import { directFeatureInfoOptions } from './direct-feature-info.js';
-import { createNomadsLayer, formatNomadsValue, updateNomadsLayer } from './nomads-grid.js';
+import { assetForTime, createNomadsLayer, formatNomadsValue, updateNomadsLayer } from './nomads-grid.js';
 import { buildSharedTimeline, classifyTimestamp, findNearestFutureIndex, layerHasTime } from './timeline.js';
 import { WindParticles } from './wind-particles.js';
 import { getWindPresentation, isWindSpeed, WIND_MODES } from './wind-styles.js';
@@ -108,7 +108,7 @@ function renderLayers(){
 
 function stopPlayback(){if(timeline.timer)clearInterval(timeline.timer);timeline.timer=null;playButton.innerHTML='&#9654;';playButton.ariaLabel='Play timeline';}
 async function loadNomadsGrid(entry,timestamp){
-  const asset=entry.metadata.assets?.[timestamp];if(!asset)return;
+  const asset=assetForTime(entry.metadata,timestamp);if(!asset)return;
   const requestId=(entry.requestId??0)+1;entry.requestId=requestId;
   try{
     let grid=gridCache.get(asset);if(!grid){const response=await fetch(asset);if(!response.ok)throw new Error(`HTTP ${response.status}`);grid=await response.json();gridCache.set(asset,grid);}

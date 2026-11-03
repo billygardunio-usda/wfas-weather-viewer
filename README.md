@@ -12,7 +12,10 @@ A static OpenLayers viewer for observation and forecast layers from the
 - Provides shaded wind speed, direction arrows, and isotachs in mph.
 - Uses one shared timeline with Past/Forecast and Now indicators.
 - Creates direct WFAS value links for every visible layer when the map is clicked.
-- Selects between WFAS gridded products and reduced NOMADS GFS grids.
+- Selects between WFAS gridded products and reduced NOMADS GFS, HRRR, RAP,
+  and NAM CONUS Nest grids.
+- Offers temperature, relative humidity, wind, gust, precipitation, cloud cover,
+  and CAPE when advertised by each NOMADS model.
 - Animates NOMADS 10 m U/V winds with browser-rendered particles.
 
 ## Local Development
@@ -61,12 +64,14 @@ approved server-side service.
 
 ## NOMADS processing
 
-The deployment workflow requests the latest available GFS 0.25-degree cycle through
-the NOMADS GRIB filter. It limits downloads to CONUS, 2 m temperature, accumulated
-precipitation, and 10 m U/V winds for forecast hours 0–24 at three-hour intervals.
-The build reduces these fields to a one-degree browser grid and publishes static JSON
-assets. This keeps GitHub Pages independent of runtime NOMADS CORS behavior and avoids
-shipping full GRIB2 files to browsers.
+The deployment workflow requests recent GFS, HRRR, RAP, and NAM CONUS Nest cycles
+through their NOMADS GRIB filters. It limits downloads to CONUS and selected surface
+fire-weather attributes: 2 m temperature and relative humidity, 10 m U/V wind,
+surface gust, accumulated precipitation, total cloud cover, and surface CAPE.
+Only fields returned by a model are shown. The build reduces these fields to a
+one-degree browser grid and publishes static JSON assets. This keeps GitHub Pages
+independent of runtime NOMADS CORS behavior and avoids shipping full GRIB2 files to
+browsers.
 
 The workflow caches the last successful NOMADS dataset. If a refresh is temporarily
 unavailable, Pages can continue deploying the cached data; the source timestamps
@@ -74,8 +79,8 @@ remain visible through the shared timeline.
 
 Animated particles show wind flow while the shaded layer shows speed. Particle
 animation is an interpretive display; source values remain available through map
-inspection. The first release intentionally limits model, variables, resolution, and
-forecast range so scheduled builds and Pages storage remain bounded.
+inspection. Forecasts are sampled at three-hour intervals with shorter ranges for
+rapid-refresh regional models so scheduled builds and Pages storage remain bounded.
 
 ## Predictive Service Area indices
 
