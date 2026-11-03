@@ -17,7 +17,7 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Add a GitHub Pages deployment workflow.
 - [x] Add focused tests and production-build validation.
 - [x] Add WFAS/NOMADS source selection.
-- [x] Publish constrained NOMADS GFS grids during the Pages build.
+- [x] Publish constrained NOMADS GFS, HRRR, RAP, and NAM Nest grids during the Pages build.
 - [x] Add timeline-synchronized animated 10 m wind particles.
 
 ## Direct Value Links

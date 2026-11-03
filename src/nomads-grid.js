@@ -1,11 +1,16 @@
 import ImageLayer from 'ol/layer/Image.js';
 import ImageStatic from 'ol/source/ImageStatic.js';
 import { transformExtent } from 'ol/proj.js';
+import { normalizeTimestamp } from './timeline.js';
 
 const COLOR_RAMPS = {
   temperature: [[250, '#2c7bb6'], [260, '#00a6ca'], [270, '#90eb9d'], [280, '#ffff8c'], [290, '#f9d057'], [300, '#e76818'], [310, '#d7191c']],
   precipitation: [[0, '#f7fbff'], [1, '#c6dbef'], [3, '#6baed6'], [8, '#2171b5'], [15, '#6a51a3'], [25, '#dd1c77']],
   wind: [[0, '#2c7bb6'], [2.2352, '#00a6ca'], [4.4704, '#00ccbc'], [8.9408, '#ffff8c'], [13.4112, '#f29e2e'], [17.8816, '#d7191c']],
+  relativeHumidity: [[0, '#8c510a'], [20, '#d8b365'], [40, '#f6e8c3'], [60, '#c7eae5'], [80, '#5ab4ac'], [100, '#01665e']],
+  cloudCover: [[0, '#ffffff'], [20, '#e5e5e5'], [40, '#bdbdbd'], [60, '#969696'], [80, '#636363'], [100, '#252525']],
+  windGust: [[0, '#2c7bb6'], [4.4704, '#00ccbc'], [8.9408, '#ffff8c'], [13.4112, '#f29e2e'], [17.8816, '#d7191c'], [26.8224, '#7f0000']],
+  cape: [[0, '#ffffff'], [250, '#ffffb2'], [750, '#fecc5c'], [1500, '#fd8d3c'], [2500, '#f03b20'], [4000, '#bd0026']],
 };
 
 function hexToRgb(hex) {
@@ -46,6 +51,12 @@ export function createNomadsLayer(metadata) {
   return new ImageLayer({ opacity: 0.72, extent: transformExtent(metadata.extent, 'EPSG:4326', 'EPSG:3857') });
 }
 
+export function assetForTime(metadata, timestamp) {
+  const normalized = normalizeTimestamp(timestamp);
+  const assetEntry = Object.entries(metadata.assets ?? {}).find(([time]) => normalizeTimestamp(time) === normalized);
+  return assetEntry?.[1] ?? null;
+}
+
 export function updateNomadsLayer(layer, metadata, grid) {
   layer.setSource(new ImageStatic({
     url: renderGridImage(grid, metadata.visualization),
@@ -80,5 +91,9 @@ export function formatNomadsValue(metadata, grid, longitude, latitude) {
   const value = sampleGrid(grid, longitude, latitude, field);
   if (value == null) return 'No data';
   if (field === 'temperature') return `${((value - 273.15) * 9 / 5 + 32).toFixed(1)} °F`;
-  return `${(value / 25.4).toFixed(2)} in`;
+  if (field === 'precipitation') return `${(value / 25.4).toFixed(2)} in`;
+  if (field === 'relativeHumidity' || field === 'cloudCover') return `${value.toFixed(0)}%`;
+  if (field === 'windGust') return `${(value * 2.236936).toFixed(1)} mph`;
+  if (field === 'cape') return `${value.toFixed(0)} J/kg`;
+  return value.toFixed(1);
 }
