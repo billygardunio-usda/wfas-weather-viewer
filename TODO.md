@@ -19,6 +19,7 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Add WFAS/NOMADS source selection.
 - [x] Publish constrained NOMADS GFS, HRRR, RAP, and NAM Nest grids during the Pages build.
 - [x] Add timeline-synchronized animated 10 m wind particles.
+- [x] Add curated WFAS BI, ERC, SFDI, and fuel-moisture products.
 
 ## Direct Value Links
 

@@ -6,7 +6,8 @@ A static OpenLayers viewer for observation and forecast layers from the
 
 ## Features
 
-- Discovers URMA, RTMA, GFS, NDFD, NBM, GMAO, ICON, CFS, and RAP layers.
+- Discovers URMA, RTMA, GFS, NDFD, NBM, GMAO, ICON, CFS, RAP, and curated
+  WFAS fire-danger layers.
 - Filters selectable layers to valid CONUS coverage.
 - Displays multiple layers with visibility, opacity, ordering, and legends.
 - Provides shaded wind speed, direction arrows, and isotachs in mph.
@@ -17,6 +18,8 @@ A static OpenLayers viewer for observation and forecast layers from the
 - Offers temperature, relative humidity, wind, gust, precipitation, cloud cover,
   and CAPE when advertised by each NOMADS model.
 - Animates NOMADS 10 m U/V winds with browser-rendered particles.
+- Offers WFAS BI, ERC, SFDI, and 1000-hour fuel-moisture percentile products
+  when advertised by GeoServer.
 
 ## Local Development
 
@@ -56,6 +59,11 @@ Clicking the map places a marker and creates an **Open WFAS value** link for eac
 visible layer. Each link opens GeoServer's public `GetFeatureInfo` result in a
 separate tab, avoiding cross-origin response access without a proxy or cloud account.
 WFAS displays sampled values in their native source units.
+
+The **WFAS Fire Danger** model groups the confirmed public BI percentile, ERC
+percentile, Severe Fire Danger Index, and 1000-hour fuel-moisture products. These
+are percentile or classified products where indicated by WFAS; they should not be
+interpreted as raw BI or ERC values unless the layer title explicitly says so.
 
 This deployment assumes the WFAS WMS and `GetFeatureInfo` endpoints remain publicly
 accessible without credentials. GitHub Pages contains no backend, secrets, or access
