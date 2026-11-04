@@ -1,1 +1,2 @@
 eccodes==2.44.0
+rasterio==1.4.3

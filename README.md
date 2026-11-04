@@ -20,6 +20,9 @@ A static OpenLayers viewer for observation and forecast layers from the
 - Animates NOMADS 10 m U/V winds with browser-rendered particles.
 - Offers WFAS BI, ERC, SFDI, and 1000-hour fuel-moisture percentile products
   when advertised by GeoServer.
+- Derives five days of daily URMA maximum/minimum temperature and humidity,
+  maximum wind speed, median wind direction, precipitation duration, and total
+  precipitation from hourly WCS coverages.
 
 ## Local Development
 
@@ -34,6 +37,13 @@ locally, install the Python `eccodes` package and run:
 ```powershell
 python -m pip install -r requirements-nomads.txt
 npm run sync-nomads
+```
+
+Daily URMA summaries additionally require the refreshed WFAS catalog:
+
+```powershell
+npm run sync-catalog
+npm run sync-urma-daily
 ```
 
 Validate with:
@@ -94,6 +104,19 @@ animation is an interpretive display; source values remain available through map
 inspection. Forecasts are sampled at three-hour intervals with shorter ranges for
 rapid-refresh regional models so scheduled builds and Pages storage remain bounded.
 
+## Daily URMA summaries
+
+The Pages workflow requests reduced CONUS GeoTIFF coverages from WFAS WCS for
+hourly URMA temperature, relative humidity, wind speed, wind direction, and total
+precipitation. It publishes only 120×53 JSON summary grids for the five most recent
+UTC days having at least 18 common hourly observations; source GeoTIFFs are temporary
+and are not retained.
+
+Temperature is converted from packed tenths of degrees Fahrenheit. Daily products
+use cell-wise maxima/minima, maximum wind speed, circular median wind direction,
+hourly precipitation counts at or above 0.01 inch, and summed precipitation. These
+are derived products and are labeled separately from native WFAS layers.
+
 ## Predictive Service Area indices
 
 The NOMADS grid contract is also the starting point for PSA aggregation. A subsequent
@@ -110,9 +133,9 @@ until the authoritative PSA boundaries and index formulas are approved.
 
 ## Data Behavior
 
-The app does not retain WFAS weather rasters. It reads WMS capabilities during each
-build and requests visible tiles directly from WFAS. NOMADS grids are retained only
-as reduced static JSON for the current GFS cycle. Layers must intersect CONUS
+The app does not retain source WFAS weather rasters. It reads WMS capabilities during
+each build and requests visible tiles directly from WFAS. NOMADS and derived URMA
+grids are retained only as reduced static JSON. Layers must intersect CONUS
 (`-125, 24, -66, 50`). Models and dates appear or disappear as upstream services
 change. WFAS catalog history is limited to five prior UTC calendar days while all
 advertised future times remain available.

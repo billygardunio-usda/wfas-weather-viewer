@@ -9,6 +9,7 @@ export function buildSharedTimeline(layers) {
 
 export function layerHasTime(layer, timestamp) {
   if (layer.times.length === 0) return true;
+  if (layer.timeGranularity === 'day') return layer.times.some((time) => normalizeTimestamp(time).slice(0, 10) === normalizeTimestamp(timestamp).slice(0, 10));
   return layer.times.some((time) => normalizeTimestamp(time) === timestamp);
 }
 

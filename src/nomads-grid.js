@@ -11,6 +11,14 @@ const COLOR_RAMPS = {
   cloudCover: [[0, '#ffffff'], [20, '#e5e5e5'], [40, '#bdbdbd'], [60, '#969696'], [80, '#636363'], [100, '#252525']],
   windGust: [[0, '#2c7bb6'], [4.4704, '#00ccbc'], [8.9408, '#ffff8c'], [13.4112, '#f29e2e'], [17.8816, '#d7191c'], [26.8224, '#7f0000']],
   cape: [[0, '#ffffff'], [250, '#ffffb2'], [750, '#fecc5c'], [1500, '#fd8d3c'], [2500, '#f03b20'], [4000, '#bd0026']],
+  max_temperature: [[-20, '#313695'], [0, '#4575b4'], [32, '#74add1'], [50, '#abd9e9'], [70, '#fee090'], [90, '#f46d43'], [110, '#a50026']],
+  min_temperature: [[-20, '#313695'], [0, '#4575b4'], [32, '#74add1'], [50, '#abd9e9'], [70, '#fee090'], [90, '#f46d43'], [110, '#a50026']],
+  max_relative_humidity: [[0, '#8c510a'], [20, '#d8b365'], [40, '#f6e8c3'], [60, '#c7eae5'], [80, '#5ab4ac'], [100, '#01665e']],
+  min_relative_humidity: [[0, '#8c510a'], [20, '#d8b365'], [40, '#f6e8c3'], [60, '#c7eae5'], [80, '#5ab4ac'], [100, '#01665e']],
+  max_wind_speed: [[0, '#2c7bb6'], [5, '#00a6ca'], [10, '#00ccbc'], [20, '#ffff8c'], [30, '#f29e2e'], [40, '#d7191c']],
+  median_wind_direction: [[0, '#d73027'], [60, '#fc8d59'], [120, '#fee090'], [180, '#91cf60'], [240, '#4575b4'], [300, '#7b3294'], [360, '#d73027']],
+  precipitation_duration: [[0, '#ffffff'], [2, '#fee8c8'], [6, '#fdbb84'], [12, '#e34a33'], [18, '#b30000'], [24, '#67000d']],
+  total_precipitation: [[0, '#f7fbff'], [0.05, '#c6dbef'], [0.25, '#6baed6'], [0.75, '#2171b5'], [1.5, '#6a51a3'], [3, '#dd1c77']],
 };
 
 function hexToRgb(hex) {
@@ -53,7 +61,9 @@ export function createNomadsLayer(metadata) {
 
 export function assetForTime(metadata, timestamp) {
   const normalized = normalizeTimestamp(timestamp);
-  const assetEntry = Object.entries(metadata.assets ?? {}).find(([time]) => normalizeTimestamp(time) === normalized);
+  const assetEntry = Object.entries(metadata.assets ?? {}).find(([time]) => metadata.timeGranularity === 'day'
+    ? normalizeTimestamp(time).slice(0, 10) === normalized.slice(0, 10)
+    : normalizeTimestamp(time) === normalized);
   return assetEntry?.[1] ?? null;
 }
 
@@ -95,5 +105,11 @@ export function formatNomadsValue(metadata, grid, longitude, latitude) {
   if (field === 'relativeHumidity' || field === 'cloudCover') return `${value.toFixed(0)}%`;
   if (field === 'windGust') return `${(value * 2.236936).toFixed(1)} mph`;
   if (field === 'cape') return `${value.toFixed(0)} J/kg`;
+  if (field === 'max_temperature' || field === 'min_temperature') return `${value.toFixed(1)} °F`;
+  if (field === 'max_relative_humidity' || field === 'min_relative_humidity') return `${value.toFixed(0)}%`;
+  if (field === 'max_wind_speed') return `${value.toFixed(1)} mph`;
+  if (field === 'median_wind_direction') return `${value.toFixed(0)}°`;
+  if (field === 'precipitation_duration') return `${value.toFixed(0)} hours`;
+  if (field === 'total_precipitation') return `${value.toFixed(2)} in`;
   return value.toFixed(1);
 }

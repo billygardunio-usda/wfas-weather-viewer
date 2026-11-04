@@ -21,6 +21,7 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - [x] Add timeline-synchronized animated 10 m wind particles.
 - [x] Add curated WFAS BI, ERC, SFDI, and fuel-moisture products.
 - [x] Open fire-danger outlooks on Day 0 and retain five days of WFAS history.
+- [x] Derive five days of daily URMA weather summaries from hourly WCS coverages.
 
 ## Direct Value Links
 
@@ -35,7 +36,7 @@ Build and publish a static WFAS weather viewer for CONUS observations and foreca
 - WFAS and NOMADS catalogs refresh daily on GitHub Pages.
 - Clicked values open directly from WFAS in native source units.
 
-## Predictive Service Area indices
+## Predictive Service Area indices (paused)
 
 - [ ] Confirm the authoritative PSA boundary dataset and update cadence.
 - [ ] Approve index formulas, units, temporal windows, and missing-data rules.
