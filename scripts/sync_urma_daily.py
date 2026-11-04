@@ -85,7 +85,7 @@ def fetch_grid(field, timestamp):
         temporary_file.write(body)
         temporary_file.flush()
         with rasterio.open(temporary_file.name) as dataset:
-            values = dataset.read(1, masked=True).filled(numpy.nan).astype(numpy.float32)
+            values = dataset.read(1, masked=True).astype(numpy.float32).filled(numpy.nan)
     if field == "temperature":
         values /= 10
         values[(values < -100) | (values > 150)] = numpy.nan
