@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-from scripts.sync_urma_daily import available_dates, circular_median, derive_fields
+from scripts.sync_urma_daily import available_dates, circular_median, derive_fields, normalize_values
 
 
 class UrmaDailyTests(unittest.TestCase):
@@ -30,6 +30,10 @@ class UrmaDailyTests(unittest.TestCase):
         self.assertEqual(fields["minHumidity"]["values"], [20.0])
         self.assertEqual(fields["precipitationDuration"]["values"], [1.0])
         self.assertEqual(fields["totalPrecipitation"]["values"], [0.03])
+
+    def test_converts_wcs_temperature_and_precipitation_units(self):
+        self.assertAlmostEqual(float(normalize_values("temperature", numpy.array([[273.15]]))[0, 0]), 32, places=3)
+        self.assertAlmostEqual(float(normalize_values("precipitation", numpy.array([[25.4]]))[0, 0]), 1, places=3)
 
 
 if __name__ == "__main__":

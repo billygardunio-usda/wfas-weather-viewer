@@ -43,8 +43,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: public/urma-daily
-          key: urma-daily-v1-${{ github.run_id }}
-          restore-keys: urma-daily-v1-
+          key: urma-daily-v2-${{ github.run_id }}
+          restore-keys: urma-daily-v2-
       - name: Refresh URMA daily summaries
         continue-on-error: true
         run: python scripts/sync_urma_daily.py

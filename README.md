@@ -112,10 +112,11 @@ precipitation. It publishes only 120×53 JSON summary grids for the five most re
 UTC days having at least 18 common hourly observations; source GeoTIFFs are temporary
 and are not retained.
 
-Temperature is converted from packed tenths of degrees Fahrenheit. Daily products
-use cell-wise maxima/minima, maximum wind speed, circular median wind direction,
-hourly precipitation counts at or above 0.01 inch, and summed precipitation. These
-are derived products and are labeled separately from native WFAS layers.
+Temperature is converted from Kelvin to degrees Fahrenheit and precipitation from
+millimeters to inches. Daily products use cell-wise maxima/minima, maximum wind
+speed, circular median wind direction, hourly precipitation counts at or above
+0.01 inch, and summed precipitation. These are derived products and are labeled
+separately from native WFAS layers.
 
 ## Predictive Service Area indices
 

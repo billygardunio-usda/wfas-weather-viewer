@@ -16,7 +16,7 @@ WIDTH = 120
 HEIGHT = 53
 MIN_HOURS = 18
 PRECIPITATION_THRESHOLD_INCHES = 0.01
-DERIVATION_VERSION = 1
+DERIVATION_VERSION = 2
 OUTPUT_DIRECTORY = Path(__file__).resolve().parents[1] / "public" / "urma-daily"
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "public" / "catalog.json"
 COVERAGES = {
@@ -72,6 +72,24 @@ def coverage_url(coverage, timestamp):
     return f"https://wfas.firenet.gov/geoserver/wcs?{urllib.parse.urlencode(params)}"
 
 
+def normalize_values(field, values):
+    values = values.astype(numpy.float32, copy=True)
+    if field == "temperature":
+        values[(values < 180) | (values > 340)] = numpy.nan
+        values = ((values - 273.15) * 9 / 5) + 32
+        values[(values < -100) | (values > 150)] = numpy.nan
+    elif field == "relativeHumidity":
+        values[(values < 0) | (values > 100)] = numpy.nan
+    elif field == "windSpeed":
+        values[(values < 0) | (values > 250)] = numpy.nan
+    elif field == "windDirection":
+        values[(values < 0) | (values > 360)] = numpy.nan
+    elif field == "precipitation":
+        values[(values < 0) | (values > 1000)] = numpy.nan
+        values /= 25.4
+    return values
+
+
 def fetch_grid(field, timestamp):
     request = urllib.request.Request(
         coverage_url(COVERAGES[field], timestamp),
@@ -86,18 +104,7 @@ def fetch_grid(field, timestamp):
         temporary_file.flush()
         with rasterio.open(temporary_file.name) as dataset:
             values = dataset.read(1, masked=True).astype(numpy.float32).filled(numpy.nan)
-    if field == "temperature":
-        values /= 10
-        values[(values < -100) | (values > 150)] = numpy.nan
-    elif field == "relativeHumidity":
-        values[(values < 0) | (values > 100)] = numpy.nan
-    elif field == "windSpeed":
-        values[(values < 0) | (values > 250)] = numpy.nan
-    elif field == "windDirection":
-        values[(values < 0) | (values > 360)] = numpy.nan
-    elif field == "precipitation":
-        values[(values < 0) | (values > 50)] = numpy.nan
-    return field, timestamp, values
+    return field, timestamp, normalize_values(field, values)
 
 
 def circular_median(values):
