@@ -109,8 +109,8 @@ rapid-refresh regional models so scheduled builds and Pages storage remain bound
 The Pages workflow requests reduced CONUS GeoTIFF coverages from WFAS WCS for
 hourly URMA temperature, relative humidity, wind speed, wind direction, and total
 precipitation. It publishes only 120×53 JSON summary grids for the five most recent
-UTC days having at least 18 common hourly observations; source GeoTIFFs are temporary
-and are not retained.
+completed UTC days having all 24 common hourly observations; source GeoTIFFs are
+temporary and are not retained.
 
 Temperature is converted from Kelvin to degrees Fahrenheit and precipitation from
 millimeters to inches. Daily products use cell-wise maxima/minima, maximum wind

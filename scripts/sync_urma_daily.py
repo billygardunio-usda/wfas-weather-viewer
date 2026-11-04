@@ -14,7 +14,7 @@ import rasterio
 BOUNDS = (-125, 24, -66, 50)
 WIDTH = 120
 HEIGHT = 53
-MIN_HOURS = 18
+MIN_HOURS = 24
 PRECIPITATION_THRESHOLD_INCHES = 0.01
 DERIVATION_VERSION = 2
 OUTPUT_DIRECTORY = Path(__file__).resolve().parents[1] / "public" / "urma-daily"
