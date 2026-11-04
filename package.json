@@ -6,6 +6,7 @@
   "scripts": {
     "sync-catalog": "node scripts/sync-catalog.js",
     "sync-nomads": "python3 scripts/sync_nomads.py",
+    "sync-urma-daily": "python3 scripts/sync_urma_daily.py",
     "predev": "npm run sync-catalog",
     "dev": "vite",
     "prebuild": "npm run sync-catalog",

@@ -5,6 +5,7 @@ describe('shared timeline', () => {
   it('builds a sorted union',()=>expect(buildSharedTimeline([forecast,observation])).toEqual(['2026-10-20T00:00:00.000Z','2026-10-20T01:00:00.000Z','2026-10-20T03:00:00.000Z']));
   it('requires exact dimensional times',()=>{expect(layerHasTime(observation,normalizeTimestamp('2026-10-20T01:00:00Z'))).toBe(true);expect(layerHasTime(observation,normalizeTimestamp('2026-10-20T03:00:00Z'))).toBe(false);});
   it('keeps timeless layers available',()=>expect(layerHasTime({times:[]},'x')).toBe(true));
+  it('keeps daily summaries visible across hourly timestamps',()=>expect(layerHasTime({times:['2026-10-20T00:00:00Z'],timeGranularity:'day'},'2026-10-20T18:00:00Z')).toBe(true));
   it('classifies past and forecast',()=>{const now=new Date('2026-10-20T02:00:00Z');expect(classifyTimestamp('2026-10-20T01:00:00Z',now)).toBe('Past');expect(classifyTimestamp('2026-10-20T03:00:00Z',now)).toBe('Forecast');});
   it('finds nearest future',()=>expect(findNearestFutureIndex(buildSharedTimeline([observation,forecast]),new Date('2026-10-20T02:00:00Z'))).toBe(2));
 });

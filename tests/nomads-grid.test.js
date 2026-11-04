@@ -30,6 +30,11 @@ describe('NOMADS grids', () => {
     expect(assetForTime(metadata, '2026-11-03T12:00:00.000Z')).toBe('./nomads/gfs.json');
   });
 
+  it('matches daily assets to hourly timestamps on the same UTC date', () => {
+    const metadata = { assets: { '2026-11-03T00:00:00.000Z': './urma-daily/day.json' }, timeGranularity: 'day' };
+    expect(assetForTime(metadata, '2026-11-03T18:00:00.000Z')).toBe('./urma-daily/day.json');
+  });
+
   it('advects particles in screen coordinates', () => {
     expect(particleDelta(10, 5, 0)).toEqual([3.2, -1.6]);
     expect(particleDelta(10, 0, 60)[0]).toBeCloseTo(6.4);

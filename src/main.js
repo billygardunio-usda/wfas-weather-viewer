@@ -112,19 +112,19 @@ function renderLayers(){
 }
 
 function stopPlayback(){if(timeline.timer)clearInterval(timeline.timer);timeline.timer=null;playButton.innerHTML='&#9654;';playButton.ariaLabel='Play timeline';}
-async function loadNomadsGrid(entry,timestamp){
+async function loadStaticGrid(entry,timestamp){
   const asset=assetForTime(entry.metadata,timestamp);if(!asset)return;
   const requestId=(entry.requestId??0)+1;entry.requestId=requestId;
   try{
     let grid=gridCache.get(asset);if(!grid){const response=await fetch(asset);if(!response.ok)throw new Error(`HTTP ${response.status}`);grid=await response.json();gridCache.set(asset,grid);}
-    if(entry.requestId!==requestId||timeline.times[timeline.index]!==timestamp)return;
-    entry.grid=grid;entry.gridTime=timestamp;updateNomadsLayer(entry.layer,entry.metadata,grid);syncParticleGrid();
-  }catch(error){connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>NOMADS grid unavailable</span>';console.error(error);}
+    if(entry.requestId!==requestId||assetForTime(entry.metadata,timeline.times[timeline.index])!==asset)return;
+    entry.grid=grid;entry.gridAsset=asset;updateNomadsLayer(entry.layer,entry.metadata,grid);syncParticleGrid();
+  }catch(error){connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>Static grid unavailable</span>';console.error(error);}
 }
 function selectTime(index){
   if(!timeline.times.length)return; timeline.index=Math.max(0,Math.min(index,timeline.times.length-1)); const timestamp=timeline.times[timeline.index]; timeSlider.value=timeline.index; selectedTime.textContent=`${formatTimestamp(timestamp)} UTC${fireDayLabel(timestamp)}`;
   const kind=classifyTimestamp(timestamp); timeKind.hidden=false;timeKind.textContent=kind;timeKind.className=`time-kind ${kind.toLowerCase()}`;
-  activeLayers.forEach((entry)=>{entry.hasData=layerHasTime(entry.metadata,timestamp);entry.layer.setVisible(entry.userVisible&&entry.hasData);if(entry.hasData&&entry.metadata.source==='wfas'&&entry.metadata.times.length)entry.layer.getSource().updateParams({TIME:timestamp});if(entry.hasData&&entry.metadata.source==='nomads'){if(entry.gridTime!==timestamp){entry.grid=null;entry.layer.setSource(null);}loadNomadsGrid(entry,timestamp);}});syncParticleGrid();renderLayers();
+  activeLayers.forEach((entry)=>{entry.hasData=layerHasTime(entry.metadata,timestamp);entry.layer.setVisible(entry.userVisible&&entry.hasData);if(entry.hasData&&entry.metadata.source==='wfas'&&entry.metadata.times.length)entry.layer.getSource().updateParams({TIME:timestamp});if(entry.hasData&&entry.metadata.source!=='wfas'){const asset=assetForTime(entry.metadata,timestamp);if(entry.gridAsset!==asset){entry.grid=null;entry.gridAsset=asset;entry.layer.setSource(null);}loadStaticGrid(entry,timestamp);}});syncParticleGrid();renderLayers();
 }
 function rebuildTimeline({preferFuture=false,preferTimestamp=null}={}){
   const previous=timeline.times[timeline.index];timeline.times=buildSharedTimeline(activeLayers.map((entry)=>entry.metadata));const exact=timeline.times.indexOf(previous),preferred=timeline.times.findIndex((time)=>new Date(time).valueOf()===new Date(preferTimestamp).valueOf());timeline.index=preferred>=0?preferred:exact>=0?exact:timeline.times.length-1;const future=findNearestFutureIndex(timeline.times);if(preferred<0&&preferFuture&&future>=0)timeline.index=future;
@@ -139,7 +139,7 @@ function addWeatherLayer(metadata,windMode='shaded'){
   if(!metadata||activeLayers.some((entry)=>entry.metadata.id===metadata.id))return;
   const presentation=metadata.source==='nomads'&&metadata.visualization==='wind-particles'?{mode:'animated',label:'Animated particles'}:getWindPresentation(metadata,windMode);
   let layer;
-  if(metadata.source==='nomads')layer=createNomadsLayer(metadata);
+  if(metadata.source!=='wfas')layer=createNomadsLayer(metadata);
   else{const params={LAYERS:presentation?.layers.join(',')??metadata.id,TILED:true,FORMAT:'image/png',TRANSPARENT:true};if(presentation)params.SLD_BODY=presentation.sld;if(metadata.times.at(-1))params.TIME=metadata.times.at(-1);const source=new TileWMS({url:'https://wfas.firenet.gov/geoserver/wms',params,serverType:'geoserver',transition:0});layer=new TileLayer({source,opacity:.72,extent:transformExtent(CONUS_EXTENT,'EPSG:4326','EPSG:3857')});source.on('tileloaderror',()=>{connection.classList.add('error');connection.innerHTML='<span class="status-dot"></span><span>Some WFAS tiles failed</span>';});}
   activeLayers.unshift({metadata,layer,userVisible:true,hasData:true,windPresentation:presentation});map.addLayer(layer);syncOrder();rebuildTimeline({preferFuture:metadata.modelKind==='Forecast',preferTimestamp:metadata.defaultTime});
 }
@@ -150,7 +150,7 @@ function inspectMap(coordinate){
   if(!visible.length){inspectorResults.innerHTML='<p class="inspection-message">No visible weather layers to inspect.</p>';return;}
   inspectorResults.innerHTML=visible.map((entry)=>{
     const title=`${entry.metadata.modelLabel} · ${entry.metadata.title}`;
-    if(entry.metadata.source==='nomads')return `<article class="inspection-result"><strong>${escapeHtml(title)}</strong><span class="value">${escapeHtml(entry.grid?formatNomadsValue(entry.metadata,entry.grid,lon,lat):'Loading…')}</span></article>`;
+    if(entry.metadata.source!=='wfas')return `<article class="inspection-result"><strong>${escapeHtml(title)}</strong><span class="value">${escapeHtml(entry.grid?formatNomadsValue(entry.metadata,entry.grid,lon,lat):'Loading…')}</span></article>`;
     const url=entry.layer.getSource().getFeatureInfoUrl(coordinate,map.getView().getResolution(),map.getView().getProjection(),directFeatureInfoOptions(entry.metadata.id));
     return `<article class="inspection-result"><strong>${escapeHtml(title)}</strong><a class="value-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Open WFAS value ↗</a></article>`;
   }).join('');
@@ -165,9 +165,10 @@ map.on('singleclick',(event)=>inspectMap(event.coordinate));$('#close-inspector'
 
 async function loadCatalog(){
   try{
-    const [wfasResponse,nomadsResponse]=await Promise.all([fetch('./catalog.json'),fetch('./nomads/catalog.json')]);if(!wfasResponse.ok)throw new Error(`WFAS catalog HTTP ${wfasResponse.status}`);
+    const [wfasResponse,nomadsResponse,urmaDailyResponse]=await Promise.all([fetch('./catalog.json'),fetch('./nomads/catalog.json'),fetch('./urma-daily/catalog.json')]);if(!wfasResponse.ok)throw new Error(`WFAS catalog HTTP ${wfasResponse.status}`);
     const wfas=await wfasResponse.json();wfas.source={id:'wfas',label:'WFAS gridded'};wfas.layers=wfas.layers.map((layer)=>({...layer,source:'wfas',sourceLabel:'WFAS'}));catalogs.set('wfas',wfas);
     if(nomadsResponse.ok){const nomads=await nomadsResponse.json();nomads.layers=nomads.layers.map((layer)=>({...layer,source:'nomads',sourceLabel:'NOMADS'}));catalogs.set('nomads',nomads);}
+    if(urmaDailyResponse.ok){const urmaDaily=await urmaDailyResponse.json();urmaDaily.layers=urmaDaily.layers.map((layer)=>({...layer,source:'urma-daily',sourceLabel:'WFAS derived'}));catalogs.set('urma-daily',urmaDaily);}
     sourceSelect.innerHTML=[...catalogs].map(([id,item])=>`<option value="${id}" ${item.layers.length?'':'disabled'}>${item.source.label}${item.layers.length?'':' - awaiting refresh'}</option>`).join('');sourceSelect.disabled=false;sourceSelect.value='wfas';renderModels();
     sourceSelect.addEventListener('change',renderModels);modelSelect.addEventListener('change',()=>renderVariables(modelSelect.value));
     const layerCount=[...catalogs.values()].reduce((total,item)=>total+item.layers.length,0);connection.classList.add('ready');connection.innerHTML=`<span class="status-dot"></span><span>${layerCount} layers ready</span>`;
