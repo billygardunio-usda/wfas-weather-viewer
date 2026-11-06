@@ -1,0 +1,13 @@
+.hawaii-viewer .sidebar{overflow-y:auto}
+.hawaii-viewer .layer-section{flex:1 0 auto}
+.hawaii-viewer input[type=password],.hawaii-viewer input[type=date],.hawaii-viewer input[type=month]{width:100%;min-height:42px;padding:8px 10px;background:#fff;border:1px solid #bfc4bd;border-radius:4px}
+.hcdp-help{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.5}
+.hcdp-help.error{color:#a13f28}
+#hcdp-clear{margin-top:8px;background:var(--paper);border:1px solid var(--line);border-radius:4px}
+.hcdp-legend{margin-top:10px;font-size:11px}
+.hcdp-ramp{height:12px;margin-top:6px;border:1px solid var(--line)}
+.hcdp-labels{display:flex;justify-content:space-between}
+.hawaii-viewer .timeline{grid-template-columns:auto minmax(160px,1fr)}
+.hawaii-viewer .timeline-range{grid-column:1/-1;padding-top:0}
+.hawaii-viewer .timeline-status strong{white-space:normal}
+.hawaii-viewer .topbar h1{font-size:24px}

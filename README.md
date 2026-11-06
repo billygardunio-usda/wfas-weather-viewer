@@ -3,6 +3,9 @@
 A static OpenLayers viewer for observation and forecast layers from the
 [WFAS GeoServer](https://wfas.firenet.gov/geoserver/web/) and
 [NCEP NOMADS](https://nomads.ncep.noaa.gov/).
+A separate **Hawaii Climate Explorer** is available at
+<https://billygardunio-usda.github.io/wfas-weather-viewer/hawaii/>.
+The original WFAS interface remains at the site root.
 
 ## Features
 
@@ -24,12 +27,55 @@ A static OpenLayers viewer for observation and forecast layers from the
   maximum wind speed, median wind direction, precipitation duration, and total
   precipitation from hourly WCS coverages.
 
+## Hawaii Climate Data Portal
+
+Open the separate **Hawaii Climate Explorer** at `/hawaii/`. It loads daily/monthly
+rainfall and mean, maximum, or minimum temperature GeoTIFFs independently of
+WFAS and NOMADS. Enter your own HCDP API token,
+choose a variable, daily or monthly period, date, and statewide or county extent,
+then select **Add HCDP map**. The map zooms to the downloaded coverage. Use
+**Active layers** for visibility, opacity, ordering, and removal; click the map
+for rainfall in millimeters or temperature in degrees Celsius.
+
+Dates refer to Hawaii Standard Time (UTC-10). The initial date is the previous
+completed Hawaii day/month, not a guarantee of upstream availability. Missing
+maps produce an explicit message; try an earlier date. Daily contemporary
+rainfall is experimental. Colors use fixed scales (rainfall 0–250 mm,
+temperature -10–35 °C) and saturate outside those limits; inspected values are
+not clipped. No-data cells remain transparent. A WebGL-capable browser is required.
+
+Each added map is a snapshot for its selected period. Its timeline date is
+the day or first of the month in HST, and it is hidden at other snapshots.
+Add other dates to compare snapshots through the Hawaii-only timeline.
+Daily/monthly map values are not instantaneous observations.
+
+The browser sends the token only in the `Authorization: Bearer …` header to
+`https://api.hcdp.ikewai.org/raster`. The token field is memory-only: it is not
+stored in local/session storage, embedded in a URL, or included in the build.
+**Clear token** clears the field and cancels any in-progress request; already
+downloaded maps remain until removed or the page is reloaded. Do not commit
+tokens, add them to `VITE_*` environment variables, or share them in issues.
+Visitors to GitHub Pages supply their own tokens; there is no shared service key.
+
+This integration follows the
+[HCDP API specification](https://github.com/HCDP/hcdp_api_docs/blob/master/hcdp_api.yaml)
+and uses its contemporary rainfall (`production=new`) and temperature
+(`aggregation=mean|max|min`) filters. It relies on HCDP allowing cross-origin
+requests with the Authorization header. Network, access, missing-data, and
+rate-limit errors appear in the Hawaii interface. It does not load or depend on
+the WFAS catalogs and makes no WFAS or NOMADS requests.
+No token or backend deployment is needed to build the interface; authenticated
+live access requires your valid HCDP token.
+
 ## Local Development
 
 ```powershell
 npm install
 npm run dev
 ```
+
+Visit `http://localhost:5173/hawaii/` for the Hawaii interface, or `/` for WFAS.
+Vite builds both HTML entry points; the Pages workflow deploys both together.
 
 The committed NOMADS catalog is populated by the Pages workflow. To refresh it
 locally, install the Python `eccodes` package and run:
